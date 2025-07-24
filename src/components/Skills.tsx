@@ -40,10 +40,13 @@ const skills: Skill[] = [
   { name: "MS-Office", level: 80, category: "Tools" }
 ];
 
-
 const categories = ['Frontend', 'Backend', 'Database', 'Tools'];
 
-const Skills: React.FC = () => {
+interface SkillsProps {
+  darkMode: boolean;
+}
+
+const Skills: React.FC<SkillsProps> = ({ darkMode }) => {
   const sectionRef = useRef<HTMLElement>(null);
   const barsRef = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -130,9 +133,9 @@ const Skills: React.FC = () => {
   const getCategoryColor = (category: string) => {
     const colors = {
       Frontend: 'from-blue-400 to-cyan-400',
-      Tools: 'from-orange-400 to-amber-400',
-      DevOps: 'from-red-400 to-pink-400',
-      API: 'from-indigo-400 to-blue-400'
+      Backend: 'from-green-400 to-emerald-400',
+      Database: 'from-purple-400 to-violet-400',
+      Tools: 'from-orange-400 to-amber-400'
     };
     return colors[category as keyof typeof colors] || 'from-gray-400 to-gray-500';
   };
@@ -141,21 +144,33 @@ const Skills: React.FC = () => {
     <section
       id="skills"
       ref={sectionRef}
-      className="relative py-20 px-6 bg-gradient-to-b from-slate-800 to-slate-900"
+      className={`relative py-20 px-6 transition-colors duration-300 ${
+        darkMode 
+          ? 'bg-gradient-to-b from-slate-800 to-slate-900' 
+          : 'bg-gradient-to-b from-white to-gray-50'
+      }`}
     >
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
+        <div className={`absolute top-1/4 left-1/4 w-64 h-64 rounded-full blur-3xl ${
+          darkMode ? 'bg-blue-500/5' : 'bg-blue-500/10'
+        }`} />
+        <div className={`absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl ${
+          darkMode ? 'bg-purple-500/5' : 'bg-purple-500/10'
+        }`} />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Section Title */}
         <div className="text-center mb-16">
-          <h2 className="skills-title text-4xl md:text-6xl font-bold text-white mb-6">
+          <h2 className={`skills-title text-4xl md:text-6xl font-bold mb-6 transition-colors duration-300 ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}>
             Technical Skills
           </h2>
-          <p className="text-xl text-blue-200 max-w-3xl mx-auto">
+          <p className={`text-xl max-w-3xl mx-auto transition-colors duration-300 ${
+            darkMode ? 'text-blue-200' : 'text-blue-600'
+          }`}>
             Over 2.5 years of professional experience in full-stack development, specializing in React, Node.js, 
             and modern web technologies. Passionate about building scalable applications and solving complex problems.
           </p>
@@ -166,7 +181,11 @@ const Skills: React.FC = () => {
           {categories.map((category, categoryIndex) => (
             <div
               key={category}
-              className="skill-category bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all duration-500"
+              className={`skill-category backdrop-blur-sm rounded-2xl p-6 border transition-all duration-500 ${
+                darkMode 
+                  ? 'bg-white/5 border-white/10 hover:border-white/20' 
+                  : 'bg-white/80 border-gray-200 hover:border-gray-300'
+              }`}
             >
               <h3 className={`text-2xl font-bold mb-6 bg-gradient-to-r ${getCategoryColor(category)} bg-clip-text text-transparent`}>
                 {category}
@@ -182,11 +201,17 @@ const Skills: React.FC = () => {
                       className="skill-bar"
                     >
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-white font-medium">{skill.name}</span>
+                        <span className={`font-medium transition-colors duration-300 ${
+                          darkMode ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {skill.name}
+                        </span>
                         <span className="percentage text-amber-400 font-bold">0%</span>
                       </div>
                       
-                      <div className="relative h-3 bg-slate-700 rounded-full overflow-hidden">
+                      <div className={`relative h-3 rounded-full overflow-hidden ${
+                        darkMode ? 'bg-slate-700' : 'bg-gray-200'
+                      }`}>
                         {/* Background glow */}
                         <div className={`absolute inset-0 bg-gradient-to-r ${getCategoryColor(category)} opacity-20 rounded-full`} />
                         
@@ -209,8 +234,10 @@ const Skills: React.FC = () => {
 
         {/* Additional Info */}
         <div className="mt-16 text-center">
-          <p className="text-blue-200 text-lg">
-            [Add any additional information about your learning approach, certifications, or professional development]
+          <p className={`text-lg transition-colors duration-300 ${
+            darkMode ? 'text-blue-200' : 'text-blue-600'
+          }`}>
+            Continuously learning and exploring new technologies to stay current with industry trends.
           </p>
         </div>
       </div>

@@ -4,7 +4,12 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ijlal Furqaan's portfolio</title>
+    
+    <!-- Performance optimizations -->
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="color-scheme" content="dark light" />
+    
+    <!-- SEO -->
     <title>Ijlal Furqaan - Software Engineer & Full-Stack Developer</title>
     <meta name="description" content="Professional portfolio of Ijlal Furqaan, Software Engineer specializing in full-stack development, React, Node.js, and system optimization." />
     <meta name="keywords" content="React, Node.js, JavaScript, Python, Full-Stack Developer, Software Engineer, Portfolio" />
@@ -15,12 +20,42 @@
     <meta property="og:description" content="Professional portfolio showcasing full-stack development projects and innovative software solutions" />
     <meta property="og:type" content="website" />
     
-    <!-- Preload critical resources -->
+    <!-- Performance hints -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="//github.com">
+    <link rel="dns-prefetch" href="//linkedin.com">
+    
+    <!-- Preload critical resources -->
+    <link rel="modulepreload" href="/src/main.tsx">
+    
+    <style>
+      /* Critical CSS for loading screen */
+      #root { min-height: 100vh; }
+      .loading-screen { 
+        position: fixed; 
+        inset: 0; 
+        background: #0f172a; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        z-index: 9999; 
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="loading-screen">
+        <div style="text-align: center; color: white;">
+          <div style="width: 40px; height: 40px; border: 3px solid #374151; border-top: 3px solid #f59e0b; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+          <p>Loading Portfolio...</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <style>
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
   </body>
 </html>

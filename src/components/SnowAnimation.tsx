@@ -1,192 +1,165 @@
-import React, { useEffect, useRef } from 'react';
-import * as THREE from 'three';
+import React, { useEffect, useRef, useCallback } from 'react';
 
 interface SnowAnimationProps {
   particleCount?: number;
   enabled?: boolean;
 }
 
-const SnowAnimation: React.FC<SnowAnimationProps> = ({ particleCount = 500, enabled = true }) => {
-  const mountRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene>();
-  const rendererRef = useRef<THREE.WebGLRenderer>();
-  const particlesRef = useRef<THREE.Points>();
+interface Snowflake {
+  x: number;
+  y: number;
+  size: number;
+  speed: number;
+  drift: number;
+  opacity: number;
+}
+
+const SnowAnimation: React.FC<SnowAnimationProps> = ({ 
+  particleCount = 200, 
+  enabled = true 
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number>();
+  const snowflakesRef = useRef<Snowflake[]>([]);
   const mouseRef = useRef({ x: 0, y: 0 });
-  const frameRef = useRef<number>();
+
+  const createSnowflake = useCallback((width: number, height: number): Snowflake => ({
+    x: Math.random() * width,
+    y: Math.random() * height - height,
+    size: Math.random() * 3 + 1,
+    speed: Math.random() * 2 + 0.5,
+    drift: Math.random() * 2 - 1,
+    opacity: Math.random() * 0.8 + 0.2
+  }), []);
+
+  const initSnowflakes = useCallback(() => {
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    snowflakesRef.current = Array.from({ length: particleCount }, () =>
+      createSnowflake(width, height)
+    );
+  }, [particleCount, createSnowflake]);
+
+  const updateSnowflake = useCallback((snowflake: Snowflake, width: number, height: number) => {
+    // Update position
+    snowflake.y += snowflake.speed;
+    snowflake.x += snowflake.drift * 0.5;
+    
+    // Mouse interaction (subtle)
+    const mouseInfluence = 50;
+    const dx = mouseRef.current.x - snowflake.x;
+    const dy = mouseRef.current.y - snowflake.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance < mouseInfluence) {
+      const force = (mouseInfluence - distance) / mouseInfluence;
+      snowflake.x -= (dx / distance) * force * 0.5;
+      snowflake.y -= (dy / distance) * force * 0.5;
+    }
+    
+    // Reset snowflake if it goes off screen
+    if (snowflake.y > height + 10) {
+      snowflake.y = -10;
+      snowflake.x = Math.random() * width;
+    }
+    
+    if (snowflake.x > width + 10) {
+      snowflake.x = -10;
+    } else if (snowflake.x < -10) {
+      snowflake.x = width + 10;
+    }
+  }, []);
+
+  const drawSnowflake = useCallback((
+    ctx: CanvasRenderingContext2D, 
+    snowflake: Snowflake
+  ) => {
+    ctx.save();
+    ctx.globalAlpha = snowflake.opacity;
+    ctx.fillStyle = '#ffffff';
+    
+    // Simple circle for better performance
+    ctx.beginPath();
+    ctx.arc(snowflake.x, snowflake.y, snowflake.size, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.restore();
+  }, []);
+
+  const animate = useCallback(() => {
+    if (!enabled || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Clear canvas with slight trail effect for smooth animation
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Update and draw snowflakes
+    snowflakesRef.current.forEach(snowflake => {
+      updateSnowflake(snowflake, canvas.width, canvas.height);
+      drawSnowflake(ctx, snowflake);
+    });
+    
+    animationRef.current = requestAnimationFrame(animate);
+  }, [enabled, updateSnowflake, drawSnowflake]);
 
   useEffect(() => {
-    if (!mountRef.current || !enabled) return;
-
-    // Scene setup
-    const scene = new THREE.Scene();
-    sceneRef.current = scene;
-
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    camera.position.z = 5;
-
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: "high-performance" });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x000000, 0);
-    rendererRef.current = renderer;
-    mountRef.current.appendChild(renderer.domElement);
-
-    // Snowflake geometry
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(particleCount * 3);
-    const velocities = new Float32Array(particleCount * 3);
-    const sizes = new Float32Array(particleCount);
-
-    for (let i = 0; i < particleCount; i++) {
-      const i3 = i * 3;
-      positions[i3] = (Math.random() - 0.5) * 20;
-      positions[i3 + 1] = Math.random() * 20 - 10;
-      positions[i3 + 2] = (Math.random() - 0.5) * 20;
-      
-      velocities[i3] = (Math.random() - 0.5) * 0.01;
-      velocities[i3 + 1] = -Math.random() * 0.015 - 0.005;
-      velocities[i3 + 2] = (Math.random() - 0.5) * 0.01;
-      
-      sizes[i] = Math.random() * 2 + 0.5;
-    }
-
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-    // Snowflake material
-    const material = new THREE.ShaderMaterial({
-      uniforms: {
-        time: { value: 0 },
-        mouse: { value: new THREE.Vector2() },
-        color: { value: new THREE.Color(0xffffff) }
-      },
-      vertexShader: `
-        attribute float size;
-        uniform float time;
-        uniform vec2 mouse;
-        varying float vAlpha;
-        
-        void main() {
-          vec3 pos = position;
-          
-          // Mouse interaction
-          vec2 mouseInfluence = mouse * 0.1;
-          pos.x += sin(time + pos.y) * 0.1 + mouseInfluence.x;
-          pos.z += cos(time + pos.x) * 0.1 + mouseInfluence.y;
-          
-          vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-          gl_Position = projectionMatrix * mvPosition;
-          gl_PointSize = size * (300.0 / -mvPosition.z);
-          
-          vAlpha = 1.0 - (distance(pos.xy, mouse) * 0.5);
-          vAlpha = clamp(vAlpha, 0.3, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 color;
-        varying float vAlpha;
-        
-        void main() {
-          vec2 center = gl_PointCoord - 0.5;
-          float dist = length(center);
-          
-          if (dist > 0.5) discard;
-          
-          float alpha = 1.0 - (dist * 2.0);
-          alpha *= vAlpha;
-          
-          gl_FragColor = vec4(color, alpha * 0.8);
-        }
-      `,
-      transparent: true,
-      blending: THREE.AdditiveBlending
-    });
-
-    const particles = new THREE.Points(geometry, material);
-    particlesRef.current = particles;
-    scene.add(particles);
-
+    if (!enabled || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Set canvas size
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initSnowflakes();
+    };
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
     // Mouse tracking
-    const handleMouseMove = (event: MouseEvent) => {
-      mouseRef.current.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouseRef.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current = {
+        x: e.clientX,
+        y: e.clientY
+      };
     };
-
+    
     window.addEventListener('mousemove', handleMouseMove);
-
-    // Animation loop
-    const animate = () => {
-      frameRef.current = requestAnimationFrame(animate);
-
-      if (particlesRef.current && sceneRef.current) {
-        const positions = particlesRef.current.geometry.attributes.position.array as Float32Array;
-        
-        for (let i = 0; i < particleCount; i++) {
-          const i3 = i * 3;
-          
-          // Update positions
-          positions[i3] += velocities[i3];
-          positions[i3 + 1] += velocities[i3 + 1];
-          positions[i3 + 2] += velocities[i3 + 2];
-          
-          // Reset particles that fall below
-          if (positions[i3 + 1] < -10) {
-            positions[i3 + 1] = 10;
-            positions[i3] = (Math.random() - 0.5) * 20;
-            positions[i3 + 2] = (Math.random() - 0.5) * 20;
-          }
-          
-          // Wrap around horizontally
-          if (positions[i3] > 10) positions[i3] = -10;
-          if (positions[i3] < -10) positions[i3] = 10;
-          if (positions[i3 + 2] > 10) positions[i3 + 2] = -10;
-          if (positions[i3 + 2] < -10) positions[i3 + 2] = 10;
-        }
-        
-        particlesRef.current.geometry.attributes.position.needsUpdate = true;
-        
-        // Update uniforms
-        (material.uniforms.time.value as number) += 0.005;
-        material.uniforms.mouse.value.set(mouseRef.current.x, mouseRef.current.y);
-      }
-
-      renderer.render(scene, camera);
-    };
-
+    
+    // Start animation
     animate();
-
-    // Handle resize
-    const handleResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    // Cleanup
+    
     return () => {
+      window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('resize', handleResize);
-      if (frameRef.current) {
-        cancelAnimationFrame(frameRef.current);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
       }
-      if (mountRef.current && renderer.domElement) {
-        mountRef.current.removeChild(renderer.domElement);
-      }
-      renderer.dispose();
     };
-  }, [particleCount, enabled]);
+  }, [enabled, animate, initSnowflakes]);
+
+  if (!enabled) return null;
 
   return (
-    <div
-      ref={mountRef}
+    <canvas
+      ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-0"
-      style={{ background: 'transparent' }}
+      style={{ 
+        background: 'transparent',
+        mixBlendMode: 'screen'
+      }}
     />
   );
 };

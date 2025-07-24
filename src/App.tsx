@@ -1,99 +1,104 @@
-import React, { useState, useEffect } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import SnowAnimation from './components/SnowAnimation';
-import Navigation from './components/Navigation';
-import Hero from './components/Hero';
-import Projects from './components/Projects';
-import Experience from './components/Experience';
-import Skills from './components/Skills';
-import Contact from './components/Contact';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import './index.css';
 
-gsap.registerPlugin(ScrollTrigger);
+// Lazy load components for better performance
+const Navigation = lazy(() => import('./components/Navigation'));
+const Hero = lazy(() => import('./components/Hero'));
+const Projects = lazy(() => import('./components/Projects'));
+const Experience = lazy(() => import('./components/Experience'));
+const Education = lazy(() => import('./components/Education'));
+const Skills = lazy(() => import('./components/Skills'));
+const Contact = lazy(() => import('./components/Contact'));
+const SnowAnimation = lazy(() => import('./components/SnowAnimation'));
 
-function App() {
+// Loading component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center p-8">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+  </div>
+);
+
+const App: React.FC = () => {
   const [darkMode, setDarkMode] = useState(true);
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const [snowEnabled, setSnowEnabled] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for reduced motion preference
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setReducedMotion(mediaQuery.matches);
+    // Check for saved theme preference or default to dark mode
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      setDarkMode(savedTheme === 'dark');
+    }
 
-    const handleChange = (e: MediaQueryListEvent) => {
-      setReducedMotion(e.matches);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    // Simulate initial loading
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    // Smooth scrolling setup
-    gsap.registerPlugin(ScrollTrigger);
-    
-    // Refresh ScrollTrigger on resize
-    const handleResize = () => {
-      ScrollTrigger.refresh();
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    // Apply theme to document
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
 
-  return (
-    <div className={`min-h-screen ${darkMode ? 'dark' : ''}`}>
-      {/* Snow Animation */}
-      {!reducedMotion && snowEnabled && <SnowAnimation particleCount={400} enabled={snowEnabled} />}
-      
-      {/* Navigation */}
-      <Navigation darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-      
-      {/* Main Content */}
-      <main className="relative z-10">
-        <Hero />
-        <Projects />
-        <Experience />
-        <Skills />
-        <Contact />
-      </main>
-      
-      {/* Footer */}
-      <footer className="relative z-10 bg-slate-900 border-t border-white/10 py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-blue-200">
-            © 2025 Ijlal Furqaan. Crafted with ❄️ and modern web technologies.
-          </p>
-          <p className="text-slate-400 text-sm mt-2">
-            Built with React, TypeScript, Three.js, GSAP, and Tailwind CSS
-          </p>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-400 mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading Portfolio...</p>
         </div>
-      </footer>
-      
-      {/* Control Buttons */}
-      <div className="fixed bottom-4 left-4 z-50 flex flex-col space-y-2">
-        <button
-          onClick={() => setReducedMotion(!reducedMotion)}
-          className="p-3 bg-slate-800/80 backdrop-blur-sm text-white rounded-full border border-white/20 hover:bg-slate-700/80 transition-all duration-300"
-          title="Toggle animations"
-        >
-          {reducedMotion ? '🎬' : '⏸️'}
-        </button>
-        <button
-          onClick={() => setSnowEnabled(!snowEnabled)}
-          className="p-3 bg-slate-800/80 backdrop-blur-sm text-white rounded-full border border-white/20 hover:bg-slate-700/80 transition-all duration-300"
-          title="Toggle snow"
-        >
-          {snowEnabled ? '❄️' : '🌙'}
-        </button>
       </div>
+    );
+  }
+
+  return (
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'dark' : ''}`}>
+      <Suspense fallback={<LoadingSpinner />}>
+        {/* Snow Animation - only in dark mode for performance */}
+        {darkMode && <SnowAnimation particleCount={100} enabled={darkMode} />}
+
+        {/* Navigation */}
+        <Navigation darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+
+        {/* Main Content */}
+        <main className="relative z-10">
+          <Suspense fallback={<LoadingSpinner />}>
+            <Hero darkMode={darkMode} />
+          </Suspense>
+
+
+          <Suspense fallback={<LoadingSpinner />}>
+            <Experience darkMode={darkMode} />
+          </Suspense>
+
+          <Suspense fallback={<LoadingSpinner />}>
+            <Education darkMode={darkMode} />
+          </Suspense>
+
+          <Suspense fallback={<LoadingSpinner />}>
+            <Projects darkMode={darkMode} />
+          </Suspense>
+
+          <Suspense fallback={<LoadingSpinner />}>
+            <Skills darkMode={darkMode} />
+          </Suspense>
+
+          <Suspense fallback={<LoadingSpinner />}>
+            <Contact />
+          </Suspense>
+        </main>
+      </Suspense>
     </div>
   );
-}
+};
 
 export default App;
