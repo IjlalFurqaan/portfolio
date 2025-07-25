@@ -62,41 +62,44 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'dark' : ''}`}>
-      <Suspense fallback={<LoadingSpinner />}>
-        {/* Snow Animation - only in dark mode for performance */}
-        {darkMode && <SnowAnimation particleCount={100} enabled={darkMode} />}
+      {/* Snow Animation - only in dark mode for performance */}
+      {darkMode && (
+        <Suspense fallback={null}>
+          <SnowAnimation particleCount={100} enabled={darkMode} />
+        </Suspense>
+      )}
 
-        {/* Navigation */}
+      {/* Navigation */}
+      <Suspense fallback={<div className="h-16 bg-gray-200 dark:bg-gray-800" />}>
         <Navigation darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-
-        {/* Main Content */}
-        <main className="relative z-10">
-          <Suspense fallback={<LoadingSpinner />}>
-            <Hero darkMode={darkMode} />
-          </Suspense>
-
-
-          <Suspense fallback={<LoadingSpinner />}>
-            <Experience darkMode={darkMode} />
-          </Suspense>
-
-          <Suspense fallback={<LoadingSpinner />}>
-            <Education darkMode={darkMode} />
-          </Suspense>
-
-          <Suspense fallback={<LoadingSpinner />}>
-            <Projects darkMode={darkMode} />
-          </Suspense>
-
-          <Suspense fallback={<LoadingSpinner />}>
-            <Skills darkMode={darkMode} />
-          </Suspense>
-
-          <Suspense fallback={<LoadingSpinner />}>
-            <Contact />
-          </Suspense>
-        </main>
       </Suspense>
+
+      {/* Main Content */}
+      <main className="relative z-10">
+        <Suspense fallback={<LoadingSpinner />}>
+          <Hero darkMode={darkMode} />
+        </Suspense>
+
+        <Suspense fallback={<LoadingSpinner />}>
+          <Experience darkMode={darkMode} />
+        </Suspense>
+
+        <Suspense fallback={<LoadingSpinner />}>
+          <Education darkMode={darkMode} />
+        </Suspense>
+
+        <Suspense fallback={<LoadingSpinner />}>
+          <Projects darkMode={darkMode} />
+        </Suspense>
+
+        <Suspense fallback={<LoadingSpinner />}>
+          <Skills darkMode={darkMode} />
+        </Suspense>
+
+        <Suspense fallback={<LoadingSpinner />}>
+          <Contact darkMode={darkMode} /> {/* Added darkMode prop */}
+        </Suspense>
+      </main>
     </div>
   );
 };
